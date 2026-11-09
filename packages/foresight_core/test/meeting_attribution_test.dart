@@ -216,7 +216,7 @@ void main() {
         upgraded.rows('PRAGMA user_version').single.values.single,
         Store.schemaVersion,
       );
-      expect(Store.schemaVersion, 25);
+      expect(Store.schemaVersion, greaterThanOrEqualTo(25));
       expect(upgraded.rows('SELECT * FROM transcript_attributions'), isEmpty);
       expect(upgraded.rows('SELECT * FROM meeting_participants'), isEmpty);
       final row = upgraded.meetingQueries.transcript(1).single;

@@ -6,6 +6,7 @@ import 'desktop_connection_fixture.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:open_foresight/main.dart';
 
@@ -14,6 +15,7 @@ import 'meeting_setup_test.dart' show OfflineHelper;
 import 'package:open_foresight/commands.dart';
 import 'package:foresight_test_support/poll.dart';
 import 'package:open_foresight/desktop_environment.dart';
+import 'package:open_foresight/features/meetings/macos_meeting_bridge.dart';
 import 'pump_until.dart';
 
 class QuickStartDomain extends CommandFixtureDomain {
@@ -135,6 +137,7 @@ void main() {
   Future<void> show(
     WidgetTester tester, {
     PlatformCapabilities? capabilities,
+    MacOSMeetingBridge? macOSMeetings,
   }) async {
     await tester.pumpWidget(
       Foresight(
@@ -142,6 +145,7 @@ void main() {
         deviceLoader: () async => [],
         environment: DesktopEnvironment(
           capabilities: capabilities ?? testHostPlatformCapabilities,
+          macOSMeetings: macOSMeetings,
         ),
       ),
     );
@@ -213,6 +217,91 @@ void main() {
 
   Future<void> dispose(WidgetTester tester) =>
       tester.pumpWidget(const SizedBox.shrink());
+
+  testWidgets('Mac New meeting creates a draft without requesting audio', (
+    tester,
+  ) async {
+    store.setPreference('onboarding.complete', 'true');
+    await show(
+      tester,
+      capabilities: const PlatformCapabilities.macOS(),
+      macOSMeetings: const MacOSMeetingBridge(),
+    );
+    final newMeeting = find.ancestor(
+      of: find.text('New meeting'),
+      matching: find.byWidgetPredicate((widget) => widget is FilledButton),
+    );
+    for (var count = 1; count <= 2; count++) {
+      await tester.tap(newMeeting);
+      await pumpUntil(
+        tester,
+        () => store.rows('SELECT id FROM meetings').length == count,
+      );
+      await tester.pumpAndSettle();
+    }
+    expect(domain.operations, isNot(contains('meetings.start')));
+    expect(domain.operations, isNot(contains('audio.request_microphone')));
+    expect(find.byType(SpeechSetupDialog), findsNothing);
+    await dispose(tester);
+  });
+
+  testWidgets('detected Mac call waits for confirmation and reuses its event', (
+    tester,
+  ) async {
+    store.setPreference('onboarding.complete', 'true');
+    await tester.runAsync(registerSpeech);
+    final now = DateTime.now().millisecondsSinceEpoch;
+    const channel = MethodChannel('open_foresight/macos_meetings');
+    final messenger = tester.binding.defaultBinaryMessenger;
+    var active = false;
+    messenger.setMockMethodCallHandler(
+      channel,
+      (call) async => switch (call.method) {
+        'calendarAccess' => 'fullAccess',
+        'upcomingMeetings' => [
+          {
+            'id': 'calendar-occurrence',
+            'title': 'Design review',
+            'startMs': now - 60000,
+            'endMs': now + 600000,
+            'joinUrl': 'https://zoom.us/j/123',
+          },
+        ],
+        'activeCallApps' => [
+          if (active) {'id': 'us.zoom.xos', 'name': 'Zoom', 'kind': 'native'},
+        ],
+        'requestCallAttention' => null,
+        _ => throw StateError('Unexpected macOS request: ${call.method}'),
+      },
+    );
+    addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+    await show(
+      tester,
+      capabilities: const PlatformCapabilities.macOS(),
+      macOSMeetings: const MacOSMeetingBridge(),
+    );
+    await tester.tap(find.text('Mac Calendar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Design review'));
+    await tester.pumpAndSettle();
+    await pumpUntil(
+      tester,
+      () => store.rows('SELECT id FROM meetings').length == 1,
+    );
+    await tester.pumpAndSettle();
+    active = true;
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    expect(find.text('Possible call detected'), findsOneWidget);
+    expect(domain.operations, isNot(contains('meetings.start')));
+    await tester.tap(find.widgetWithText(FilledButton, 'Start recording').last);
+    await tester.pumpAndSettle();
+    await pumpUntil(tester, () => domain.operations.contains('meetings.start'));
+    await tester.pumpAndSettle();
+    expect(store.rows('SELECT id FROM meetings'), hasLength(1));
+    await dispose(tester);
+  });
 
   testWidgets(
     'direct Start transcribing authorizes once without a second dialog',

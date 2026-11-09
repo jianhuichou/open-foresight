@@ -107,9 +107,28 @@ class ApplicationMigrations {
         _createRecordingAudio();
       case 25:
         _createMeetingAttribution();
+      case 26:
+        _createMeetingLocalAttachments();
       default:
         throw StateError('Missing application database migration $version');
     }
+  }
+
+  void _createMeetingLocalAttachments() {
+    db.execute("""
+CREATE TABLE meeting_local_attachments(
+ meeting_id INTEGER NOT NULL REFERENCES meetings(id) ON DELETE CASCADE,
+ path TEXT NOT NULL,kind TEXT NOT NULL CHECK(kind IN ('file','folder')),
+ PRIMARY KEY(meeting_id,path));
+CREATE TABLE meeting_local_attachment_items(
+ meeting_id INTEGER NOT NULL,path TEXT NOT NULL,
+ source_id TEXT NOT NULL REFERENCES sources(id) ON DELETE CASCADE,
+ PRIMARY KEY(meeting_id,path,source_id),
+ FOREIGN KEY(meeting_id,path) REFERENCES meeting_local_attachments(meeting_id,path) ON DELETE CASCADE);
+CREATE INDEX meeting_local_attachment_items_source ON meeting_local_attachment_items(source_id);
+CREATE TRIGGER meeting_local_attachment_erasure AFTER DELETE ON meeting_local_attachments BEGIN
+ INSERT OR IGNORE INTO preferences(key,value) VALUES('internal.backupErasurePending','1'); END;
+""");
   }
 
   // Ordered24 owns this complete helper closure; do not modify older steps.

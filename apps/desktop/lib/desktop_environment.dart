@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'features/meetings/macos_meeting_bridge.dart';
 import 'platform_capabilities.dart';
 
 import 'package:foresight_core/desktop.dart'
@@ -29,6 +30,7 @@ class DesktopEnvironment {
     this.start = _noStart,
     this.openUri = _noUri,
     this.notify = _noNotification,
+    this.macOSMeetings,
     this.diagnosticSupport = const UnavailableDiagnosticSupport(),
   }) : _homeDirectory = homeDirectory;
 
@@ -70,6 +72,9 @@ class DesktopEnvironment {
       start: Process.start,
       openUri: openPlatformUri,
       notify: platformNotification,
+      macOSMeetings: platform.usesNativeCalendarLinks
+          ? const MacOSMeetingBridge()
+          : null,
     );
   }
 
@@ -105,6 +110,7 @@ class DesktopEnvironment {
   final DesktopProcessStarter start;
   final Future<void> Function(Uri) openUri;
   final Future<void> Function(String, String) notify;
+  final MacOSMeetingBridge? macOSMeetings;
 
   /// Startup binds the local logging session's support adapter here; tests
   /// and failed startup keep the inert unavailable port.
@@ -122,6 +128,7 @@ class DesktopEnvironment {
         start: start,
         openUri: openUri,
         notify: notify,
+        macOSMeetings: macOSMeetings,
         diagnosticSupport: support,
       );
 

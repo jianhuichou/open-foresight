@@ -132,6 +132,7 @@ class _WorkspaceState extends State<Workspace>
     settings: settingsFeature,
     chat: chatFeature,
     chatCommands: chatFeature,
+    callPromptsReady: () => !onboardingFeature.active,
   );
   @override
   late final SettingsController settingsFeature = SettingsController(
@@ -637,6 +638,7 @@ class _WorkspaceState extends State<Workspace>
       settingsFeature.helperEmbeddingHealthy,
     ),
     () => WorkspaceHeader(
+      meetingFirst: environment.macOSMeetings != null,
       embeddingName: settingsFeature.embeddingName(),
       localWords: settingsFeature.localWords(),
       helperHealthy: settingsFeature.helperEmbeddingHealthy,
@@ -649,7 +651,9 @@ class _WorkspaceState extends State<Workspace>
               meetingFeature.quickStarting ||
               meetingFeature.meetingEnhancing
           ? null
-          : tab == WorkspaceTab.meetings && meetingFeature.meetingId != null
+          : environment.macOSMeetings == null &&
+                tab == WorkspaceTab.meetings &&
+                meetingFeature.meetingId != null
           ? () =>
                 meetingFeature.recordExistingMeeting(meetingFeature.meetingId!)
           : meetingFeature.quickStart,

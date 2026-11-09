@@ -6,6 +6,7 @@ import CoreServices
 
 class MainFlutterWindow: NSWindow {
   private var integration: DesktopIntegration?
+  private var meetingsBridge: MacOSMeetingsBridge?
   override func awakeFromNib() {
     // TCC stores audio-only requests against the main bundle identifier. It
     // needs Launch Services to resolve that identifier to display our row in
@@ -31,6 +32,7 @@ class MainFlutterWindow: NSWindow {
 
     RegisterGeneratedPlugins(registry: flutterViewController)
     CalendarAuthBridge.install(flutterViewController.engine.binaryMessenger)
+    meetingsBridge = MacOSMeetingsBridge(messenger: flutterViewController.engine.binaryMessenger)
 
     isReleasedWhenClosed = false
     integration = DesktopIntegration(window: self, messenger: flutterViewController.engine.binaryMessenger)
@@ -132,7 +134,7 @@ private class DesktopIntegration: NSObject {
       entry.representedObject = command
       menu.addItem(entry)
     }
-    add("Start Open Foresight transcript", "quick-meeting")
+    add("New meeting", "quick-meeting")
     menu.addItem(.separator())
     add("Meetings", "meetings")
     add("Ask", "ask")

@@ -181,11 +181,12 @@ class OnboardingController implements OnboardingActivity {
 
   Widget imports(BuildContext context) => Column(
     children: [
-      action(
-        Icons.add_to_drive_outlined,
-        'Add files from Drive',
-        integrationFeature.chooseDrive,
-      ),
+      if (_host.environment.macOSMeetings == null)
+        action(
+          Icons.add_to_drive_outlined,
+          'Add files from Drive',
+          integrationFeature.chooseDrive,
+        ),
       action(
         Icons.search,
         'Find files on this ${_host.environment.capabilities.deviceName}',
@@ -360,6 +361,7 @@ class OnboardingController implements OnboardingActivity {
       permissions: permissions,
       imports: imports,
       library: library,
+      macCalendar: _host.environment.macOSMeetings != null,
       googleConnected: integrationFeature.googlePresentation.connected,
       googleEmail: integrationFeature.googlePresentation.email,
       connectGoogle: () async {

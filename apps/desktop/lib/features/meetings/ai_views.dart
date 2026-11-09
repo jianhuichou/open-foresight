@@ -255,19 +255,34 @@ extension _MeetingAiViews on MeetingsController {
     FeatureRequestIdentity identity,
     bool Function() current,
   ) async {
-    final sources = await selectMeetingSources(id, 'preparationSources');
-    if (sources == null || !current()) return;
-    await preferencesSetDescriptor.sendCurrent(
-      d,
-      PreferencesSetInput(
-        key: 'preparationSources.$id',
-        value: jsonEncode(sources),
-        envelope: ClientEnvelope(
-          workspaceEpoch: WireField(identity.workspaceEpoch),
+    final attachments = await _readLocalAttachments(id);
+    if (!current()) return;
+    final attached = {
+      for (final attachment in attachments) ...attachment.sourceIds,
+    };
+    final List<String>? sources;
+    if (attachments.isNotEmpty) {
+      if (attached.isEmpty) {
+        throw StateError(
+          'Attach an available document or refresh your attachments.',
+        );
+      }
+      sources = attached.toList();
+    } else {
+      sources = await selectMeetingSources(id, 'preparationSources');
+      if (sources == null || !current()) return;
+      await preferencesSetDescriptor.sendCurrent(
+        d,
+        PreferencesSetInput(
+          key: 'preparationSources.$id',
+          value: jsonEncode(sources),
+          envelope: ClientEnvelope(
+            workspaceEpoch: WireField(identity.workspaceEpoch),
+          ),
         ),
-      ),
-      current,
-    );
+        current,
+      );
+    }
     if (!current()) return;
     await meetingsPrepareDescriptor.sendCurrent(
       d,

@@ -1,4 +1,5 @@
 import '../operations.dart';
+import '../rpc_error.dart';
 import 'request_context.dart';
 
 class MeetingsListRequest extends OperationRequest {
@@ -11,15 +12,39 @@ class MeetingsListRequest extends OperationRequest {
 }
 
 class MeetingsCreateRequest extends OperationRequest {
-  MeetingsCreateRequest._(super.context, this.title);
+  MeetingsCreateRequest._(
+    super.context,
+    this.title,
+    this.calendarEventId,
+    this.starts,
+    this.ends,
+  );
   final String title;
+  final String? calendarEventId;
+  final int? starts, ends;
   @override
   Operation get operation => Operation.meetingsCreate;
   factory MeetingsCreateRequest.decode(OperationRequestContext context) {
     final values = Operation.meetingsCreate.descriptor.arguments.decode(
       context.rawArguments,
     );
-    return MeetingsCreateRequest._(context, values.value<String>("title"));
+    final title = values.value<String>('title');
+    final event = values.value<String?>('mac_calendar_event_id');
+    final starts = values.value<int?>('starts_ms');
+    final ends = values.value<int?>('ends_ms');
+    if (event == null
+        ? starts != null || ends != null
+        : starts == null ||
+              ends == null ||
+              ends <= starts ||
+              title.trim().isEmpty ||
+              title.length > 500) {
+      throw RpcError(
+        RpcErrorCode.invalidArgument,
+        'A calendar meeting needs a title and an increasing time range.',
+      );
+    }
+    return MeetingsCreateRequest._(context, title, event, starts, ends);
   }
 }
 

@@ -7,10 +7,23 @@ final class MeetingsListInput extends ClientArguments {
 }
 
 final class MeetingsCreateInput extends ClientArguments {
-  const MeetingsCreateInput({super.envelope, required this.title});
+  const MeetingsCreateInput({
+    super.envelope,
+    required this.title,
+    this.calendarEventId,
+    this.starts,
+    this.ends,
+  });
   final String title;
+  final String? calendarEventId;
+  final int? starts, ends;
   @override
-  Map<String, dynamic> toWire() => envelope.attach({'title': title});
+  Map<String, dynamic> toWire() => envelope.attach({
+    'title': title,
+    if (calendarEventId != null) 'mac_calendar_event_id': calendarEventId,
+    if (starts != null) 'starts_ms': starts,
+    if (ends != null) 'ends_ms': ends,
+  });
 }
 
 final class MeetingsRenameInput extends ClientArguments {

@@ -41,6 +41,20 @@ const meetingsCreateDescriptor = OperationDescriptor(
   createsLease: true,
   arguments: OperationArgumentSchema([
     ArgumentField("title", ArgumentKind.string),
+    ArgumentField(
+      'mac_calendar_event_id',
+      ArgumentKind.string,
+      nullable: true,
+      minimumLength: 1,
+      maximumLength: 2048,
+    ),
+    ArgumentField(
+      'starts_ms',
+      ArgumentKind.integer,
+      nullable: true,
+      minimum: 1,
+    ),
+    ArgumentField('ends_ms', ArgumentKind.integer, nullable: true, minimum: 1),
   ]),
 );
 

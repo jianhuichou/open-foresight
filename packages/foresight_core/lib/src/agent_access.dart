@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' show Random;
+import 'import_directory.dart';
 import 'profile_paths.dart';
 import 'runtime_execution_policy.dart';
 import 'native.dart' show liteRtRunner;
@@ -14,9 +15,9 @@ import 'native.dart' show liteRtRunner;
 class ImportPolicy {
   final String profile;
   final List<String> Function() roots;
-  static const maxFileBytes = 10 * 1024 * 1024;
-  static const maxDirectoryEntries = 10000;
-  static const maxDirectoryFiles = 1000;
+  static const maxFileBytes = localImportMaxFileBytes;
+  static const maxDirectoryEntries = localImportMaxDirectoryEntries;
+  static const maxDirectoryFiles = localImportMaxDirectoryFiles;
   ImportPolicy(String profile, this.roots)
     : profile = canonicalProfilePath(profile);
 

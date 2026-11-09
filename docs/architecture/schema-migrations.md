@@ -67,8 +67,9 @@ the schema.
 | 23 | Typed answer metadata, conversation and proactive scopes, and ordered source selections with foreign keys; malformed and orphan legacy values use a bounded compatibility quarantine |
 | 24 | Durable recording sessions/spans, preallocated chunk publication identities, representations, segmentation cursors, ASR leases/jobs, transcript audio links, reader references and media deletion/generation fences |
 | 25 | Meeting-local `meeting_participants`, nullable `transcript_attributions` (participant reference, display-name snapshot, state, method, parser/policy version, bounded timing evidence, manual flag), attribution revision/reprojection/erasure triggers and a `source_contents` view that renders supported names; historical meetings gain no rows |
+| 26 | Local file and folder attachments owned by each meeting, with source membership and path erasure on detach |
 
-`ApplicationMigrations.run` defines steps 1–25 and throws for any other
+`ApplicationMigrations.run` defines steps 1–26 and throws for any other
 version. `Store.schemaVersion` aliases `applicationSchemaVersion` from
 `persistence/application_schema.dart`; `tools/check_architecture_facts.py`
 checks this table against the defined steps.

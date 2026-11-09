@@ -1,2 +1,2 @@
 /// Application schema, independently versioned from helper databases.
-const applicationSchemaVersion = 25;
+const applicationSchemaVersion = 26;

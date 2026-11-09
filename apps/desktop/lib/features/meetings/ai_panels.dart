@@ -16,11 +16,16 @@ class MeetingAnswerScope extends StatelessWidget {
         Expanded(
           child: DropdownButton<String>(
             isExpanded: true,
-            value: ['meeting', 'selected', 'workspace'].contains(scope)
+            value:
+                ['meeting', 'attached', 'selected', 'workspace'].contains(scope)
                 ? scope
                 : 'meeting',
             items: const [
               DropdownMenuItem(value: 'meeting', child: Text('This meeting')),
+              DropdownMenuItem(
+                value: 'attached',
+                child: Text('Meeting + attachments'),
+              ),
               DropdownMenuItem(
                 value: 'selected',
                 child: Text('Selected local documents'),

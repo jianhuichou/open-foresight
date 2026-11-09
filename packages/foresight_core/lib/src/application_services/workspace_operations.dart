@@ -2,6 +2,7 @@ import 'dart:io';
 import '../operation_registry.dart';
 import '../operation_requests.dart';
 import '../operations.dart';
+import '../persistence/meeting_local_attachment_queries.dart';
 import '../persistence/workspace_operations_queries.dart';
 import '../proactive_questions.dart';
 import '../rpc_error.dart';
@@ -53,6 +54,13 @@ final class WorkspaceOperations {
       throw RpcError(
         RpcErrorCode.invalidArgument,
         'The workspace epoch is renewed only by a workspace clear',
+      );
+    }
+    if (request.key.startsWith(MeetingLocalAttachmentQueries.prefix) &&
+        request.context.workspaceEpoch == null) {
+      throw RpcError(
+        RpcErrorCode.invalidArgument,
+        'Meeting attachments require a workspace epoch.',
       );
     }
     if (request.key == 'echoCancellation') {

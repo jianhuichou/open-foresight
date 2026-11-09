@@ -124,10 +124,29 @@ void prePreferenceEntitiesFixture(Database db) {
   }
 }
 
+/// Remove the empty attachment tables before a fixture lowers user_version.
+void preMeetingLocalAttachmentsFixture(Database db) {
+  if (db
+      .select(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='meeting_local_attachments'",
+      )
+      .isEmpty) {
+    return;
+  }
+  if (db.select('SELECT 1 FROM meeting_local_attachments LIMIT 1').isNotEmpty) {
+    throw StateError(
+      'A historical migration fixture cannot contain meeting attachments',
+    );
+  }
+  db.execute('DROP TABLE meeting_local_attachment_items');
+  db.execute('DROP TABLE meeting_local_attachments');
+}
+
 /// Reconstruct the actual pre25 schema: no attributions or participants, and
 /// the version-22 `source_contents` view that renders channel labels only. Like
 /// the audio fixture it refuses content it would silently discard.
 void preMeetingAttributionFixture(Database db) {
+  preMeetingLocalAttachmentsFixture(db);
   if (db
       .select(
         "SELECT 1 FROM sqlite_master WHERE type='table' AND name='transcript_attributions'",

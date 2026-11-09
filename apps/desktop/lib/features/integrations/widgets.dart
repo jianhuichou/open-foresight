@@ -38,12 +38,19 @@ class IntegrationDeviceChoice extends StatelessWidget {
 }
 
 class QuickMeetingConfirmation extends StatelessWidget {
-  const QuickMeetingConfirmation({super.key});
+  const QuickMeetingConfirmation({super.key, this.meetingFirst = false});
+  final bool meetingFirst;
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Start microphone and system audio recording?'),
-    content: const Text(
-      'Another process requested a quick meeting. Recording starts only after you confirm here.',
+    title: Text(
+      meetingFirst
+          ? 'Create a meeting?'
+          : 'Start microphone and system audio recording?',
+    ),
+    content: Text(
+      meetingFirst
+          ? 'Another process requested a new meeting. Open it to add notes or choose when to record.'
+          : 'Another process requested a quick meeting. Recording starts only after you confirm here.',
     ),
     actions: [
       TextButton(
@@ -52,7 +59,7 @@ class QuickMeetingConfirmation extends StatelessWidget {
       ),
       FilledButton(
         onPressed: () => Navigator.pop(context, true),
-        child: const Text('Start recording'),
+        child: Text(meetingFirst ? 'New meeting' : 'Start recording'),
       ),
     ],
   );

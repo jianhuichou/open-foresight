@@ -17,6 +17,7 @@ export 'src/audio_device.dart';
 export 'src/desktop_audio.dart';
 export 'src/file_discovery.dart'
     show DiscoveredLocalFile, LocalFileScan, LocalFileDiscovery;
+export 'src/import_directory.dart' show enumerateImportFiles;
 export 'src/model_catalog.dart';
 export 'src/model_cache.dart';
 export 'src/model_download_contract.dart';

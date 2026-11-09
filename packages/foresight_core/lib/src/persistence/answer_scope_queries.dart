@@ -16,5 +16,10 @@ AnswerScopeSnapshot readAnswerScope(
         ? preference('answerSources.$conversation', '[]')
         : '[]',
     meeting: meeting,
+    attachmentSourceIds: mode == 'attached' && meeting != null
+        ? MeetingLocalAttachment.decodeList(
+            preference(MeetingLocalAttachment.preferenceKey(meeting), '[]'),
+          ).expand((attachment) => attachment.sourceIds)
+        : const [],
   );
 }

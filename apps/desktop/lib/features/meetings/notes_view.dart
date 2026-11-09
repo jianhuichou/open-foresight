@@ -19,6 +19,7 @@ extension _NotesView on MeetingsController {
         live: live,
         assistantToggle: assistantToggle,
       ),
+      attachments: _localAttachmentBar(id, preview: preview),
       editor: _meetingNotesInput(),
       enhancedPane: _meetingEnhancedPane(id, preview: preview),
     );

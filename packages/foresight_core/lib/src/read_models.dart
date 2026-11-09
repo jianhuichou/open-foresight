@@ -25,9 +25,10 @@ final class AnswerScopeSnapshot {
     required String mode,
     String selectedJson = '[]',
     int? meeting,
+    Iterable<String> attachmentSourceIds = const [],
   }) {
     if (mode == 'workspace') return AnswerScopeSnapshot(mode: mode, ids: null);
-    if (mode == 'meeting' && meeting != null) {
+    if ((mode == 'meeting' || mode == 'attached') && meeting != null) {
       return AnswerScopeSnapshot(
         mode: mode,
         ids: {
@@ -35,7 +36,9 @@ final class AnswerScopeSnapshot {
           'meeting-summary-$meeting',
           'meeting-actions-$meeting',
           'meeting-enhanced_notes-$meeting',
-          'meeting-preparation-$meeting',
+          // A brief can contain material from a previously detached file.
+          if (mode == 'meeting') 'meeting-preparation-$meeting',
+          if (mode == 'attached') ...attachmentSourceIds,
         },
       );
     }
@@ -53,6 +56,33 @@ final class AnswerScopeSnapshot {
     }
     throw StateError('Invalid answer source scope');
   }
+}
+
+/// A Finder selection and the local sources imported from it.
+final class MeetingLocalAttachment {
+  const MeetingLocalAttachment(this.path, this.kind, this.sourceIds);
+  final String path, kind;
+  final List<String> sourceIds;
+  bool get isFolder => kind == 'folder';
+
+  static const maxSources = 100;
+  static String preferenceKey(int meeting) =>
+      'meetingLocalAttachments.$meeting';
+
+  static List<MeetingLocalAttachment> decodeList(String value) => [
+    for (final entry in jsonDecode(value) as List)
+      MeetingLocalAttachment(
+        entry['path'] as String,
+        entry['kind'] as String,
+        List<String>.unmodifiable((entry['source_ids'] as List).cast<String>()),
+      ),
+  ];
+
+  Map<String, Object?> toWire() => {
+    'path': path,
+    'kind': kind,
+    'source_ids': sourceIds,
+  };
 }
 
 /// Immutable persistence projections shared by core queries and desktop views.

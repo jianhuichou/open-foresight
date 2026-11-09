@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:foresight_test_support/test_paths.dart';
 import 'package:open_foresight/features/meetings/read_model.dart';
 import 'package:foresight_core/desktop.dart';
+import 'package:open_foresight/desktop_environment.dart';
 import 'package:open_foresight/features/meetings/meetings_controller.dart';
 import 'package:open_foresight/shell/ports.dart';
 import 'package:open_foresight/shell/workspace_tab.dart';
@@ -100,6 +101,8 @@ class _Host implements FeatureHost {
   _Host(this.connection);
   @override
   final _Connection connection;
+  @override
+  final environment = const DesktopEnvironment();
   @override
   bool mounted = true;
   @override

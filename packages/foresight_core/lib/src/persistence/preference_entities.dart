@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:sqlite3/sqlite3.dart';
+import 'meeting_local_attachment_queries.dart';
 
 enum _Kind {
   answerScope,
@@ -89,6 +90,10 @@ final class PreferenceEntities {
   }
 
   String? read(String key) {
+    final attachmentMeeting = MeetingLocalAttachmentQueries.owner(key);
+    if (attachmentMeeting != null) {
+      return MeetingLocalAttachmentQueries(db).read(attachmentMeeting);
+    }
     final parsed = _Key.parse(key);
     if (parsed == null) return null;
     Object? value;
@@ -205,6 +210,14 @@ final class PreferenceEntities {
   }
 
   bool write(String key, String value) {
+    if (key.startsWith(MeetingLocalAttachmentQueries.prefix)) {
+      final meeting = MeetingLocalAttachmentQueries.owner(key);
+      if (meeting == null) {
+        throw ArgumentError('Invalid meeting attachment key');
+      }
+      MeetingLocalAttachmentQueries(db).write(meeting, value);
+      return true;
+    }
     final parsed = _Key.parse(key);
     if (parsed == null) return false;
     List<String>? selected;

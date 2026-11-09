@@ -29,6 +29,8 @@
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>NSAudioCaptureUsageDescription</key>
 	<string>Transcribe meeting audio playing on this Mac when you start recording.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Show upcoming meetings from Calendar and suggest the matching event when you join a call.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>$(PRODUCT_COPYRIGHT)</string>
 	<key>NSMainNibFile</key>

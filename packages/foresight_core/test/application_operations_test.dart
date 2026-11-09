@@ -232,6 +232,43 @@ void main() {
     await iterator.cancel();
   }
 
+  test('reopening a Mac calendar occurrence preserves its meeting', () async {
+    const start = 1794240000000;
+    final event = {
+      'title': 'Thesis review',
+      'mac_calendar_event_id': 'event-occurrence',
+      'starts_ms': start,
+      'ends_ms': start + 1800000,
+    };
+    final original = await call('meetings.create', event);
+    final id = original['id'] as int;
+    await app.call('meetings.rename', {'id': id, 'title': 'Chapter review'});
+    final refreshed = await call('meetings.create', {
+      ...event,
+      'title': 'Updated calendar title',
+      'starts_ms': start + 60000,
+    });
+    expect(refreshed['id'], id);
+    final meeting = domain.store.meetingQueries.workspace(id)!;
+    expect(meeting.title, 'Chapter review');
+    expect(meeting.starts, start + 60000);
+    final other = await call('meetings.create', {
+      ...event,
+      'mac_calendar_event_id': 'another-occurrence',
+    });
+    expect(other['id'], isNot(id));
+    await expectLater(
+      call('meetings.create', {...event, 'ends_ms': start}),
+      throwsA(
+        isA<RpcError>().having(
+          (error) => error.code,
+          'code',
+          RpcErrorCode.invalidArgument,
+        ),
+      ),
+    );
+  });
+
   test(
     'import, revision, search and deletion retain source scope and metadata',
     () async {

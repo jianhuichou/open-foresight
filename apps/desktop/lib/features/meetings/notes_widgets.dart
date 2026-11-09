@@ -10,11 +10,13 @@ class MeetingNotesLayout extends StatelessWidget {
     required this.preview,
     required this.enhancedVisible,
     required this.toolbar,
+    this.attachments,
     required this.editor,
     required this.enhancedPane,
   });
   final bool wide, preview, enhancedVisible;
   final Widget toolbar, editor, enhancedPane;
+  final Widget? attachments;
 
   @override
   Widget build(BuildContext context) {
@@ -26,6 +28,7 @@ class MeetingNotesLayout extends StatelessWidget {
       child: Column(
         children: [
           toolbar,
+          if (attachments != null) attachments!,
           const Divider(height: 1),
           Expanded(
             child: !enhancedVisible

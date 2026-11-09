@@ -65,6 +65,47 @@ final class MeetingOperationsQueries {
   List<MeetingDetails> list() => _rows(
     'SELECT m.*,d.created,d.reminder FROM meetings m LEFT JOIN meeting_details d ON d.meeting_id=m.id ORDER BY m.id',
   ).map(MeetingDetails.fromRow).toList();
+
+  /// Local calendar occurrences share the existing meeting timeline. Their
+  /// reserved account and key keep Google sync from updating these rows.
+  int openMacCalendarMeeting({
+    required String event,
+    required String title,
+    required int starts,
+    required int ends,
+  }) => store.workflowTransaction(() {
+    const account = 'macos-calendar';
+    final key = '$account:$event';
+    final existing = store.rows(
+      'SELECT meeting_id FROM calendar_events WHERE event_key=?',
+      [key],
+    ).firstOrNull;
+    final meeting = existing?['meeting_id'] as int? ?? store.meeting(title);
+    if (existing != null) {
+      store.db.execute(
+        'UPDATE meetings SET title=? WHERE id=? AND title_manually_edited=0',
+        [title, meeting],
+      );
+    }
+    store.db.execute(
+      'INSERT INTO calendar_events(event_key,account,calendar_id,google_id,'
+      'meeting_id,source_id,starts,ends,status,metadata,synced) '
+      "VALUES(?,?,?, ?,?,'',?,?,'confirmed','{}',?) "
+      'ON CONFLICT(event_key) DO UPDATE SET starts=excluded.starts,'
+      'ends=excluded.ends,synced=excluded.synced',
+      [
+        key,
+        account,
+        account,
+        event,
+        meeting,
+        starts,
+        ends,
+        DateTime.now().millisecondsSinceEpoch,
+      ],
+    );
+    return meeting;
+  });
   List<MeetingNoteData> notes(int id) => store.meetingQueries.notes(id);
   List<TranscriptSegment> transcript(int id) =>
       store.meetingQueries.transcript(id);

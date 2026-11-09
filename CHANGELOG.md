@@ -6,6 +6,15 @@ Notable changes to Open Foresight are recorded here. Versions follow
 
 ## [Unreleased]
 
+### Added
+
+- Attach Finder files and folders to individual meetings. Refresh folder
+  contents from the meeting and use its attached sources for preparation,
+  chat, and live Q&A.
+- On macOS, open upcoming events from the Mac Calendar app or create a
+  meeting before recording. Suggest a meeting when a supported conferencing
+  app starts using the microphone and wait for explicit recording consent.
+
 ## [0.1.6] - 2026-10-28
 
 ### Fixed

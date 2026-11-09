@@ -248,6 +248,7 @@ const diagnosticCodeLocations = <String>[
   'src/persistence/label_queries.dart',
   'src/persistence/label_store.dart',
   'src/persistence/meeting_index_jobs.dart',
+  'src/persistence/meeting_local_attachment_queries.dart',
   'src/persistence/meeting_operations_queries.dart',
   'src/persistence/meeting_queries.dart',
   'src/persistence/meeting_store.dart',

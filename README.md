@@ -47,6 +47,27 @@ Open Foresight records and transcribes meetings, keeps your notes and recordings
 - **MCP server.** Agents can import, search, ask, take notes, and record through the same application service the desktop uses.
 - **Desktop integration.** A global shortcut to quick-start a meeting, desktop notifications, a monitor for the local helper, and a background service that stays warm while the window is open and, after recent agent use, until one idle period has passed. Recording requires the visible desktop.
 
+## Meeting workflow on macOS
+
+Open **New meeting** for an unscheduled meeting, or open **Meetings → Mac
+Calendar** to select an upcoming event already available in the macOS Calendar
+app. Selecting the same event reopens the same meeting. macOS asks for full
+Calendar access so the app can read those events. Open Foresight only reads
+calendar events through this integration. The workflow uses no Google account
+or Drive access.
+
+Use the paperclip in the meeting notes to attach local files or a folder.
+Attachments are saved with the meeting. Use the refresh action to pick up
+folder changes. Preparation and meeting answers use the selected meeting's
+materials. Supported local document types are Markdown, plain text, PDF, and RTF.
+
+Keep Open Foresight running to receive a prompt when a supported conferencing
+app starts using the microphone. Browser detection uses microphone activity
+with either a nearby calendar event that has a recognised meeting link or
+simultaneous browser playback. Choose **Open meeting** to prepare or
+**Start recording** to begin capture. You can also start recording from an
+open meeting. Models and macOS audio permissions are required for transcription.
+
 ## Beyond the original
 
 Open Foresight reproduces the original's main workflows, and adds features the original does not have:

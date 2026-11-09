@@ -244,8 +244,19 @@ final class MeetingOperations {
     ),
     TypedOperationHandler<MeetingsCreateRequest>(
       Operation.meetingsCreate,
-      (request, {current}) =>
-          _once(request, () => {'id': domain.store.meeting(request.title)}),
+      (request, {current}) => _once(request, () {
+        final event = request.calendarEventId;
+        return {
+          'id': event == null
+              ? domain.store.meeting(request.title)
+              : queries.openMacCalendarMeeting(
+                  event: event,
+                  title: request.title,
+                  starts: request.starts!,
+                  ends: request.ends!,
+                ),
+        };
+      }),
     ),
     TypedOperationHandler<MeetingsRenameRequest>(
       Operation.meetingsRename,

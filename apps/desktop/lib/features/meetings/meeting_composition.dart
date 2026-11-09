@@ -83,6 +83,68 @@ extension _MeetingComposition on MeetingsController {
         onRecord: () => recordExistingMeeting(meeting.id),
       );
 
+  Widget meetingListHeading() => heading(
+    'Meetings',
+    actions: [
+      if (_host.environment.macOSMeetings != null) _macCalendarButton(),
+      if (_host.environment.macOSMeetings == null &&
+          !_integrations.googlePresentation.connected)
+        OutlinedButton.icon(
+          onPressed: _operations.busy
+              ? null
+              : () => _operations.run(
+                  _integrations.granolaCalendar
+                      ? _integrationCommands.connectGranolaCalendar
+                      : _integrationCommands.connectGoogle,
+                ),
+          icon: const Icon(Icons.calendar_today, size: 18),
+          label: const Text('Connect Calendar'),
+        ),
+      if (_host.environment.macOSMeetings == null &&
+          _integrations.googlePresentation.connected)
+        OutlinedButton.icon(
+          onPressed: _operations.busy || _integrations.googleSyncing
+              ? null
+              : () => _operations.run(_integrationCommands.syncCalendar),
+          icon: const Icon(Icons.calendar_today, size: 18),
+          label: Text(
+            _integrations.lastCompletedRefreshMilliseconds == 0
+                ? 'Import Calendar'
+                : 'Last imported: ${timeLabel(_integrations.lastCompletedRefreshMilliseconds)}',
+          ),
+        ),
+      OutlinedButton.icon(
+        onPressed: _operations.busy
+            ? null
+            : () => _operations.run(exportMeetings),
+        icon: const Icon(Icons.ios_share, size: 18),
+        label: const Text('Export meeting notes'),
+      ),
+      if (_host.environment.macOSMeetings == null)
+        pill(
+          'New meeting',
+          _operations.busy || recording != null
+              ? null
+              : () => _operations.run(() async {
+                  final epoch = d.workspaceEpoch;
+                  final created = await meetingsCreateDescriptor.sendKeyed(
+                    newMeetingKey,
+                    d,
+                    const MeetingsCreateInput(title: '[New Meeting]'),
+                    sendEnvelope: ClientEnvelope(
+                      workspaceEpoch: epoch != null
+                          ? WireField(epoch)
+                          : const WireField.absent(),
+                    ),
+                  );
+                  if (mounted && d.workspaceEpoch == epoch)
+                    update(() => meetingId = created.id);
+                }),
+          icon: Icons.add,
+        ),
+    ],
+  );
+
   Widget meetingList({bool showHeading = true}) {
     final now = DateTime.now().millisecondsSinceEpoch;
     return MeetingTimeline(

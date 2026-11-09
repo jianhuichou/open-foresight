@@ -297,7 +297,9 @@ class IntegrationsController implements IntegrationsPort {
     try {
       final allow = await showDialog<bool>(
         context: context,
-        builder: (_) => const QuickMeetingConfirmation(),
+        builder: (_) => QuickMeetingConfirmation(
+          meetingFirst: environment.macOSMeetings != null,
+        ),
       );
       if (allow == true &&
           mounted &&

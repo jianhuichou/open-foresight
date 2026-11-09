@@ -13,6 +13,7 @@ class WorkspaceHeader extends StatelessWidget {
     required this.showHelperMonitor,
     this.recordingHeader,
     this.onRecord,
+    this.meetingFirst = false,
   });
   final String embeddingName;
   final int localWords;
@@ -20,6 +21,7 @@ class WorkspaceHeader extends StatelessWidget {
   final VoidCallback showHelperMonitor;
   final Widget? recordingHeader;
   final VoidCallback? onRecord;
+  final bool meetingFirst;
   @override
   Widget build(BuildContext context) => Padding(
     padding: EdgeInsets.fromLTRB(24, 28, recordingHeader != null ? 16 : 24, 8),
@@ -98,8 +100,10 @@ class WorkspaceHeader extends StatelessWidget {
             else
               FilledButton.icon(
                 onPressed: onRecord,
-                icon: const Icon(Icons.graphic_eq),
-                label: const Text('Start transcribing'),
+                icon: Icon(meetingFirst ? Icons.add : Icons.graphic_eq),
+                label: Text(
+                  meetingFirst ? 'New meeting' : 'Start transcribing',
+                ),
                 style: FilledButton.styleFrom(
                   backgroundColor: workspaceInk,
                   foregroundColor: Colors.white,

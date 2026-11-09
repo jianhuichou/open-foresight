@@ -16,6 +16,8 @@ const workspaceContentTables = [
   'audio_source_clocks',
   'recording_spans',
   'recording_sessions',
+  'meeting_local_attachment_items',
+  'meeting_local_attachments',
   'source_selection_items',
   'source_selections',
   'conversation_scopes',

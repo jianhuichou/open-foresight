@@ -277,6 +277,25 @@ def _sign_application(app, identity, entitlements, *, before_seal=None):
     with tempfile.TemporaryDirectory(prefix="foresight-aot-sign-") as folder:
         with Path(entitlements).open("rb") as stream:
             values = plistlib.load(stream)
+        desktop = entitlements
+        desktop_executable = None
+        info = app / "Contents/Info.plist"
+        if info.is_file():
+            with info.open("rb") as stream:
+                metadata = plistlib.load(stream)
+            if metadata.get("NSCalendarsFullAccessUsageDescription"):
+                desktop_executable = (
+                    app / "Contents/MacOS" / metadata["CFBundleExecutable"]
+                )
+                desktop = Path(folder) / "Desktop.entitlements"
+                with desktop.open("wb") as desktop_stream:
+                    plistlib.dump(
+                        {
+                            **values,
+                            "com.apple.security.personal-information.calendars": True,
+                        },
+                        desktop_stream,
+                    )
         # Dart's embedded AOT snapshot is mapped as executable memory outside
         # the Mach-O image. This is required even without JIT compilation.
         values["com.apple.security.cs.allow-unsigned-executable-memory"] = True
@@ -285,7 +304,11 @@ def _sign_application(app, identity, entitlements, *, before_seal=None):
             plistlib.dump(values, output_stream)
 
         def sign(path):
-            selected = aot if path.resolve() in aot_paths else entitlements
+            target = path.resolve()
+            if target == app or target == desktop_executable:
+                selected = desktop
+            else:
+                selected = aot if target in aot_paths else entitlements
             run(
                 "codesign",
                 "--force",

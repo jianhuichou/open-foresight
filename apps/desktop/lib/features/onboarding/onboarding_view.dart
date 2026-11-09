@@ -15,6 +15,7 @@ class OnboardingView extends StatefulWidget {
   final WidgetBuilder permissions, imports, library;
   final Future<bool> Function() connectGoogle;
   final bool googleConnected;
+  final bool macCalendar;
   final String googleEmail;
   const OnboardingView({
     super.key,
@@ -33,6 +34,7 @@ class OnboardingView extends StatefulWidget {
     required this.connectGoogle,
     required this.googleConnected,
     required this.googleEmail,
+    this.macCalendar = false,
   });
 
   @override
@@ -155,6 +157,11 @@ class _OnboardingViewState extends State<OnboardingView> {
               ],
             ),
     3 => widget.permissions(context),
+    4 when widget.macCalendar => const Text(
+      'Open Mac Calendar from Meetings to see your upcoming events. '
+      'You can also create a meeting and attach files from Finder.',
+      style: TextStyle(fontSize: 18, height: 1.5),
+    ),
     4 => Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -227,7 +234,9 @@ class _OnboardingViewState extends State<OnboardingView> {
       _ => (
         Icons.folder_copy_outlined,
         'A library that works for you',
-        'Add files from Drive or your computer, then ask questions with citations. Local files work without a Google account.',
+        widget.macCalendar
+            ? 'Add files from Finder and ask questions with citations. You can also attach files and folders to individual meetings.'
+            : 'Add files from Drive or your computer, then ask questions with citations. Local files work without a Google account.',
       ),
     };
     return Column(
@@ -320,7 +329,11 @@ class _OnboardingViewState extends State<OnboardingView> {
                     const SizedBox(height: 20),
                     TextButton(
                       onPressed: busy ? null : () => go(step + 1),
-                      child: Text(step == 3 ? 'Continue' : 'Skip for now'),
+                      child: Text(
+                        step == 3 || (step == 4 && widget.macCalendar)
+                            ? 'Continue'
+                            : 'Skip for now',
+                      ),
                     ),
                   ],
                   if (!wide) ...[const SizedBox(height: 32), information()],

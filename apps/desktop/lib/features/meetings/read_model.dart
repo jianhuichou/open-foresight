@@ -69,6 +69,10 @@ class MeetingReadModel {
       _value(StoreReadQueries.artifacts(id, kind)) ?? const [];
   List<CalendarAttachment> attachments(int id) =>
       _value(StoreReadQueries.attachments(id)) ?? const [];
+  List<MeetingLocalAttachment> localAttachments(int id) =>
+      MeetingLocalAttachment.decodeList(
+        preference(MeetingLocalAttachment.preferenceKey(id), '[]'),
+      );
   int? revision(int id) => _value<int?>(StoreReadQueries.meetingRevision(id));
   String preference(String key, [String fallback = '']) =>
       _value(StoreReadQueries.preference(key, defaults[key] ?? fallback)) ??
@@ -165,6 +169,10 @@ class MeetingReadModel {
           'enhanced_notes',
         ])
           StoreReadQueries.artifacts(id, kind),
+        StoreReadQueries.preference(
+          MeetingLocalAttachment.preferenceKey(id),
+          '[]',
+        ),
         StoreReadQueries.preference('proactiveScope.$id', 'meeting'),
         StoreReadQueries.preference('answerScope.meeting:$id', 'workspace'),
       ]);

@@ -23,6 +23,7 @@ import '../../presentation/workspace_presentation.dart';
 import '../../service_edit_dialog.dart';
 import '../../shell/ports.dart';
 import '../../shell/workspace_tab.dart';
+import 'macos_meeting_bridge.dart';
 import 'meeting_export.dart';
 import 'meeting_note_state.dart';
 import 'meeting_visuals.dart';
@@ -30,9 +31,11 @@ import 'note_save_scheduler.dart';
 import 'read_model.dart';
 part 'meeting_composition.dart';
 part 'notes_view.dart';
+part 'local_attachment_views.dart';
 part 'assistant_views.dart';
 part 'ai_views.dart';
 part 'audio_views.dart';
+part 'macos_meeting_views.dart';
 
 const _meetingAssistantMinWidth = 760.0;
 
@@ -60,6 +63,7 @@ class MeetingsController implements MeetingActivity, MeetingCommands {
     required SettingsCommands settings,
     required ChatActivity chat,
     required ChatCommands chatCommands,
+    bool Function()? callPromptsReady,
   }) : _host = host,
        _navigation = navigation,
        _operations = operations,
@@ -68,7 +72,8 @@ class MeetingsController implements MeetingActivity, MeetingCommands {
        _integrationCommands = integrationCommands,
        _settings = settings,
        _chat = chat,
-       _chatCommands = chatCommands;
+       _chatCommands = chatCommands,
+       _callPromptsReady = callPromptsReady;
   final FeatureHost _host;
   final WorkspaceNavigation _navigation;
   final OperationGate _operations;
@@ -78,6 +83,12 @@ class MeetingsController implements MeetingActivity, MeetingCommands {
   final SettingsCommands _settings;
   final ChatActivity _chat;
   final ChatCommands _chatCommands;
+  final bool Function()? _callPromptsReady;
+  final _macCallDetection = MacCallDetection();
+  Timer? _macMeetingTimer;
+  bool _macPollBusy = false, _macDialogOpen = false;
+  DateTime? _macCalendarRefreshed;
+  List<MacCalendarMeeting> _macUpcoming = const [];
   bool _started = false;
   int _noteReadGeneration = 0;
   late final MeetingReadModel _reads = MeetingReadModel(
@@ -99,6 +110,7 @@ class MeetingsController implements MeetingActivity, MeetingCommands {
     if (_started || _disposed) return;
     _started = true;
     _reads.start(selected: meetingId, preview: meetingPreviewId);
+    _startMacMeetingWatch();
   }
 
   final _recordingAdmissionChanges = StreamController<void>.broadcast(
@@ -148,6 +160,7 @@ class MeetingsController implements MeetingActivity, MeetingCommands {
   Future<void> dispose() {
     if (_disposed) return _closing ?? Future<void>.value();
     _disposed = true;
+    _macMeetingTimer?.cancel();
     unawaited(_recordingAdmissionChanges.close());
     quickStarting = false;
     unawaited(_reads.dispose());
@@ -374,64 +387,6 @@ class MeetingsController implements MeetingActivity, MeetingCommands {
     }
   }
 
-  Widget meetingListHeading() => heading(
-    'Meetings',
-    actions: [
-      if (!_integrations.googlePresentation.connected)
-        OutlinedButton.icon(
-          onPressed: _operations.busy
-              ? null
-              : () => _operations.run(
-                  _integrations.granolaCalendar
-                      ? _integrationCommands.connectGranolaCalendar
-                      : _integrationCommands.connectGoogle,
-                ),
-          icon: const Icon(Icons.calendar_today, size: 18),
-          label: const Text('Connect Calendar'),
-        ),
-      if (_integrations.googlePresentation.connected)
-        OutlinedButton.icon(
-          onPressed: _operations.busy || _integrations.googleSyncing
-              ? null
-              : () => _operations.run(_integrationCommands.syncCalendar),
-          icon: const Icon(Icons.calendar_today, size: 18),
-          label: Text(
-            _integrations.lastCompletedRefreshMilliseconds == 0
-                ? 'Import Calendar'
-                : 'Last imported: ${timeLabel(_integrations.lastCompletedRefreshMilliseconds)}',
-          ),
-        ),
-      OutlinedButton.icon(
-        onPressed: _operations.busy
-            ? null
-            : () => _operations.run(exportMeetings),
-        icon: const Icon(Icons.ios_share, size: 18),
-        label: const Text('Export meeting notes'),
-      ),
-      pill(
-        'New meeting',
-        _operations.busy || recording != null
-            ? null
-            : () => _operations.run(() async {
-                final epoch = d.workspaceEpoch;
-                final created = await meetingsCreateDescriptor.sendKeyed(
-                  newMeetingKey,
-                  d,
-                  const MeetingsCreateInput(title: '[New Meeting]'),
-                  sendEnvelope: ClientEnvelope(
-                    workspaceEpoch: epoch != null
-                        ? WireField(epoch)
-                        : const WireField.absent(),
-                  ),
-                );
-                if (mounted && d.workspaceEpoch == epoch)
-                  update(() => meetingId = created.id);
-              }),
-        icon: Icons.add,
-      ),
-    ],
-  );
-
   Widget meetingSummaryPanel(int id, {bool actions = false}) {
     if (actions) return meetingActionsPanel(id);
     final identity = _reads.presentationIdentity;
@@ -547,10 +502,19 @@ class MeetingsController implements MeetingActivity, MeetingCommands {
     return result.id;
   }
 
-  Future<void> startRecording({bool accessReviewed = false}) async {
+  Future<void> startRecording({
+    bool accessReviewed = false,
+    Future<bool> Function()? confirmedCallIsActive,
+  }) async {
     final id = meetingId, epoch = d.workspaceEpoch;
     if (!accessReviewed && !await _integrationCommands.ensureRecordingAccess())
       return;
+    if (confirmedCallIsActive != null && !await confirmedCallIsActive()) {
+      if (mounted) {
+        _operations.setError('The call ended before recording started.');
+      }
+      return;
+    }
     if (!mounted) return;
     // The OS access prompt can stay open while another client clears the
     // workspace, which closes this meeting. Never record into another one.
@@ -652,6 +616,10 @@ class MeetingsController implements MeetingActivity, MeetingCommands {
       return;
     final identity = FeatureRequestIdentity.capture(d);
     bool current() => identity.isCurrent(d, alive: mounted);
+    if (_host.environment.macOSMeetings != null) {
+      await _openMacMeeting(null, current: current);
+      return;
+    }
     update(() => quickStarting = true);
     try {
       final problem = await _speechSetupProblem(current: current);
@@ -692,7 +660,10 @@ class MeetingsController implements MeetingActivity, MeetingCommands {
     }
   }
 
-  Future<void> recordExistingMeeting(int id) async {
+  Future<void> recordExistingMeeting(
+    int id, {
+    Future<bool> Function()? confirmedCallIsActive,
+  }) async {
     if (_operations.busy || recording != null || quickStarting) return;
     final identity = FeatureRequestIdentity.capture(d),
         selected = meetingId,
@@ -713,7 +684,9 @@ class MeetingsController implements MeetingActivity, MeetingCommands {
       }
       forgetPendingMeetingCreates();
       update(() => meetingId = id);
-      await _operations.run(startRecording);
+      await _operations.run(
+        () => startRecording(confirmedCallIsActive: confirmedCallIsActive),
+      );
     } catch (failure, stack) {
       if (current())
         await _operations.run(() => Future<void>.error(failure, stack));

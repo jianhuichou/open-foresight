@@ -168,6 +168,12 @@
         "_attributionMarker",
         "_createMeetingAttribution"
       ]
+    },
+    "26": {
+      "sha256": "2a5a08991a5cf6e1db392ecc866b327aad09005d46e88731320f021bb51a96ac",
+      "symbols": [
+        "_createMeetingLocalAttachments"
+      ]
     }
   },
   "fixtures": {
